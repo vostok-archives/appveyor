@@ -1,7 +1,4 @@
 $ErrorActionPreference = "Stop"
-#$env:appveyor_repo_branch = "dev";
-#$env:appveyor_build_number = "1";
-#$env:appveyor_build_folder = "C:\Sources\Vostok\main\vostok.commons";
 
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
@@ -21,25 +18,29 @@ else
     $branchstr = "-$branch"
   }
 }
+$branchstr = $branchstr.Replace("_", "-")
 $zeroPaddedBuildNumber = [convert]::ToInt32($env:appveyor_build_number, 10).ToString("000000")
-Update-AppveyorBuild -Version "0.0.0.$zeroPaddedBuildNumber$branchstr".Replace("_", "-")
 $csprojs = $env:appveyor_build_folder | Get-ChildItem -Recurse -Filter "*.csproj"
+if ($env:APPVEYOR_REPO_TAG -eq "false") {
+  $buildVersion = "-beta$zeroPaddedBuildNumber";
+}
+$version = "0.0.0$buildVersion$branchstr"
 foreach($csproj in $csprojs)
 {
   $name = $csproj.BaseName
   $xmlPath = "$env:appveyor_build_folder\$name\$name.csproj"
   $xml = [xml](Get-Content $xmlPath)
-  $props = $xml.SelectSingleNode("//PropertyGroup")
-  if ($props)
+  $versionNode = $xml.SelectSingleNode("//PropertyGroup/Version")
+  if ($versionNode)
   {
-    Write-Output "Generating version $env:appveyor_build_version for $name"
-    $version = $xml.CreateElement("Version")
-    $versionText = $xml.CreateTextNode($env:appveyor_build_version)
-    $version.AppendChild($versionText)
-    $props.AppendChild($version)
+    $version = $versionNode.InnerText
+    $buildVersion = ""
+    $version = "$version$buildVersion$branchstr"
+    $versionNode.InnerText = $version;
     $xml.Save($xmlPath)
   }
 }
+Update-AppveyorBuild -Version $version
 
 Set-Location "$env:appveyor_build_folder\.."
 $releases = "https://api.github.com/repos/skbkontur/cement/releases"
