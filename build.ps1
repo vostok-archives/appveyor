@@ -77,15 +77,21 @@ if (!$?) {
 }
 
 if ($env:appveyor_repo_branch -eq "master" -and "$env:APPVEYOR_PULL_REQUEST_HEAD_REPO_BRANCH" -eq "") {
-  $proj="Vostok.$env:APPVEYOR_PROJECT_NAME.csproj"
-  & $env:cm pack $proj
-  if (!$?) {
-      exit 1
-  }
   $csprojs = $env:appveyor_build_folder | Get-ChildItem -Recurse -Filter "*.csproj"
   foreach($csproj in $csprojs)
   {
     $name = $csproj.BaseName
+    $xmlPath = "$env:appveyor_build_folder\$name\$name.csproj"
+    $xml = [xml](Get-Content $xmlPath)
+    $versionNode = $xml.SelectSingleNode("//PropertyGroup/Version")
+    if ($versionNode) {
+      $proj="$name.csproj"
+      & $env:cm pack $proj
+      if (!$?) {
+          exit 1
+      }
+    }
+
     $nupkgs = Get-ChildItem $env:appveyor_build_folder\$name\bin\Release\$name.*.nupkg
     if ($nupkgs)
     {
