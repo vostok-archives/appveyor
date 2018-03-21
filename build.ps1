@@ -44,13 +44,13 @@ Update-AppveyorBuild -Version $version
 
 Set-Location "$env:appveyor_build_folder\.."
 $releases = "https://api.github.com/repos/skbkontur/cement/releases"
-Write-Host Determining latest release
+Write-Host Determining latest cement release
 $download = (Invoke-WebRequest $releases | ConvertFrom-Json)[0].assets[0].browser_download_url
 
-Write-Host Dowloading latest release
+Write-Host Dowloading latest cement release
 Invoke-WebRequest $download -Out "cement.zip"
 
-Write-Host Extracting release files
+Write-Host Extracting release cement files
 Expand-Archive "cement.zip" -Force -DestinationPath "cement"
 Set-Location "cement\dotnet"
 & cmd.exe /c install.cmd
@@ -96,8 +96,8 @@ if ($env:appveyor_repo_branch -eq "master" -and "$env:APPVEYOR_PULL_REQUEST_HEAD
 if (Test-Path "$env:appveyor_build_folder\Vostok.$env:APPVEYOR_PROJECT_NAME.Tests\Vostok.$env:APPVEYOR_PROJECT_NAME.Tests.csproj")
 {
   dotnet test "$env:appveyor_build_folder\Vostok.$env:APPVEYOR_PROJECT_NAME.Tests\Vostok.$env:APPVEYOR_PROJECT_NAME.Tests.csproj" --logger "trx;LogFileName=tests.trx"
-  if (!$?) {
-      exit 1
+  if ($LASTEXITCODE -ne 0) {
+      exit $LASTEXITCODE
   }
   if (Test-Path "$env:appveyor_build_folder\Vostok.$env:APPVEYOR_PROJECT_NAME.Tests\TestResults\tests.trx") {
     $wc = New-Object 'System.Net.WebClient'
