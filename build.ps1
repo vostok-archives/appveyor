@@ -44,12 +44,12 @@ Write-Output "set version $version"
 Update-AppveyorBuild -Version $version
 
 Set-Location "$env:appveyor_build_folder\.."
-$releases = "https://api.github.com/repos/skbkontur/cement/releases"
-Write-Host Determining latest cement release
-$download = (Invoke-WebRequest $releases | ConvertFrom-Json)[0].assets[0].browser_download_url
+#$releases = "https://api.github.com/repos/skbkontur/cement/releases"
+#Write-Host Determining latest cement release
+#$download = (Invoke-WebRequest $releases | ConvertFrom-Json)[0].assets[0].browser_download_url
 
 Write-Host Dowloading latest cement release
-Invoke-WebRequest $download -Out "cement.zip"
+Invoke-WebRequest "https://github.com/skbkontur/cement/releases/download/v1.0.31/62a81460823b12b1452fba39de48673255ded50e.zip" -Out "cement.zip"
 
 Write-Host Extracting release cement files
 Expand-Archive "cement.zip" -Force -DestinationPath "cement"
