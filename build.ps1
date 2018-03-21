@@ -61,15 +61,15 @@ $env:cm = "$env:USERPROFILE\bin\cm.cmd"
 Set-Location $env:appveyor_build_folder\..
 & $env:cm init
 Set-Location $env:appveyor_build_folder
-& $env:cm update-deps
+& $env:cm update-deps -v
 if (!$?) {
     exit 1
 }
-& $env:cm build-deps
+& $env:cm build-deps -v
 if (!$?) {
     exit 1
 }
-& $env:cm build
+& $env:cm build -v
 if (!$?) {
     exit 1
 }
