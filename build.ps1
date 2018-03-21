@@ -21,6 +21,7 @@ else
 $branchstr = $branchstr.Replace("_", "-")
 $zeroPaddedBuildNumber = [convert]::ToInt32($env:appveyor_build_number, 10).ToString("000000")
 $csprojs = $env:appveyor_build_folder | Get-ChildItem -Recurse -Filter "*.csproj"
+$buildVersion = ""
 if ($env:APPVEYOR_REPO_TAG -eq "false") {
   $buildVersion = "-beta$zeroPaddedBuildNumber";
 }
@@ -34,12 +35,12 @@ foreach($csproj in $csprojs)
   if ($versionNode)
   {
     $version = $versionNode.InnerText
-    $buildVersion = ""
     $version = "$version$buildVersion$branchstr"
     $versionNode.InnerText = $version;
     $xml.Save($xmlPath)
   }
 }
+Write-Output "set version $version"
 Update-AppveyorBuild -Version $version
 
 Set-Location "$env:appveyor_build_folder\.."
