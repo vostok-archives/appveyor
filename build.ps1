@@ -56,6 +56,7 @@ Expand-Archive "cement.zip" -Force -DestinationPath "cement"
 Set-Location "cement\dotnet"
 #& cmd.exe /c install.cmd
 $wc = New-Object System.Net.WebClient
+New-Item -ItemType directory -Path "$env:USERPROFILE\.cement"
 Invoke-WebRequest "https://raw.githubusercontent.com/vostok/cement-modules/master/settings" -OutFile "$env:USERPROFILE\.cement\settings"
 $cmpath = "$env:appveyor_build_folder\..\cement\dotnet\cm.exe"
 [Environment]::SetEnvironmentVariable("cm", $cmpath, "User")
