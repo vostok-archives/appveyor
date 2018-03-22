@@ -84,6 +84,10 @@ if (!$?) {
 if ($env:appveyor_repo_branch -eq "master" -and "$env:APPVEYOR_PULL_REQUEST_HEAD_REPO_BRANCH" -eq "") {
   Write-Output Pack nuget packages
   $csprojs = $env:appveyor_build_folder | Get-ChildItem -Recurse -Filter "*.csproj"
+  $packOption = ""
+  if ($env:APPVEYOR_REPO_TAG -eq "false") {
+     $packOption = "-prerelease"
+  }
   foreach($csproj in $csprojs)
   {
     $name = $csproj.BaseName
@@ -93,7 +97,7 @@ if ($env:appveyor_repo_branch -eq "master" -and "$env:APPVEYOR_PULL_REQUEST_HEAD
     if ($versionNode) {
       $proj="$name.csproj"
       Write-Output Pack $proj
-      & $env:cm pack $proj
+      & $env:cm pack $packOption $proj
       if (!$?) {
           exit 1
       }
