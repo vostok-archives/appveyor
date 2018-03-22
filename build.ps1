@@ -49,16 +49,17 @@ Set-Location "$env:appveyor_build_folder\.."
 #$download = (Invoke-WebRequest $releases | ConvertFrom-Json)[0].assets[0].browser_download_url
 
 Write-Host Dowloading latest cement release
-Invoke-WebRequest "https://github.com/skbkontur/cement/releases/download/v1.0.31/62a81460823b12b1452fba39de48673255ded50e.zip" -Out "cement.zip"
+Invoke-WebRequest "https://github.com/vostok/cement/releases/download/v1.0.21-vostok/cement.zip" -Out "cement.zip"
 
 Write-Host Extracting release cement files
 Expand-Archive "cement.zip" -Force -DestinationPath "cement"
 Set-Location "cement\dotnet"
-& cmd.exe /c install.cmd
+#& cmd.exe /c install.cmd
 $wc = New-Object System.Net.WebClient
 Invoke-WebRequest "https://raw.githubusercontent.com/vostok/cement-modules/master/settings" -OutFile "$env:USERPROFILE\.cement\settings"
-[Environment]::SetEnvironmentVariable("cm", "$env:USERPROFILE\bin\cm.cmd", "User")
-$env:cm = "$env:USERPROFILE\bin\cm.cmd"
+$cmpath = "$env:appveyor_build_folder\..\cement\dotnet\cm.exe"
+[Environment]::SetEnvironmentVariable("cm", $cmpath, "User")
+$env:cm = $cmpath
 
 Set-Location $env:appveyor_build_folder\..
 & $env:cm init
