@@ -63,20 +63,24 @@ $env:cm = "$env:USERPROFILE\bin\cm.cmd"
 Set-Location $env:appveyor_build_folder\..
 & $env:cm init
 Set-Location $env:appveyor_build_folder
+Write-Output cm update-deps
 & $env:cm update-deps -v
 if (!$?) {
     exit 1
 }
+Write-Output cm build-deps
 & $env:cm build-deps -v
 if (!$?) {
     exit 1
 }
+Write-Output cm build
 & $env:cm build -v
 if (!$?) {
     exit 1
 }
 
 if ($env:appveyor_repo_branch -eq "master" -and "$env:APPVEYOR_PULL_REQUEST_HEAD_REPO_BRANCH" -eq "") {
+  Write-Output Pack nuget packages
   $csprojs = $env:appveyor_build_folder | Get-ChildItem -Recurse -Filter "*.csproj"
   foreach($csproj in $csprojs)
   {
@@ -86,6 +90,7 @@ if ($env:appveyor_repo_branch -eq "master" -and "$env:APPVEYOR_PULL_REQUEST_HEAD
     $versionNode = $xml.SelectSingleNode("//PropertyGroup/Version")
     if ($versionNode) {
       $proj="$name.csproj"
+      Write-Output Pack $proj
       & $env:cm pack $proj
       if (!$?) {
           exit 1
@@ -100,8 +105,10 @@ if ($env:appveyor_repo_branch -eq "master" -and "$env:APPVEYOR_PULL_REQUEST_HEAD
   }
 }
 
+
 if (Test-Path "$env:appveyor_build_folder\Vostok.$env:APPVEYOR_PROJECT_NAME.Tests\Vostok.$env:APPVEYOR_PROJECT_NAME.Tests.csproj")
 {
+  Write-Output Run tests
   dotnet test "$env:appveyor_build_folder\Vostok.$env:APPVEYOR_PROJECT_NAME.Tests\Vostok.$env:APPVEYOR_PROJECT_NAME.Tests.csproj" --logger "trx;LogFileName=tests.trx"
   if ($LASTEXITCODE -ne 0) {
       exit $LASTEXITCODE
