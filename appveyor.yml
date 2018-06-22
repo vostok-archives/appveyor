@@ -27,7 +27,7 @@ dotnet_csproj:
   file_version: '{version}'
 
 before_build:
-  nuget restore
+  nuget restore || exit /b 0
   
 build_script:
   - cmd: cd .. & call %cm% init & cd %appveyor_build_folder%
