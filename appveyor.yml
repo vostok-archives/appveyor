@@ -25,7 +25,10 @@ dotnet_csproj:
   package_version: '{version}'
   assembly_version: '{version}'
   file_version: '{version}'
-   
+
+before_build:
+  nuget restore
+  
 build_script:
   - cmd: cd .. & call %cm% init & cd %appveyor_build_folder%
   - cmd: call %cm% update-deps -v
