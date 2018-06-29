@@ -4,31 +4,40 @@ image: Visual Studio 2017
 # default appveyour version
 version: 0.0.0.{build}
 
-# install cement; patch appveyour version; init need_deploy_to_nuget & need_deploy_to_github variables
 install:
-  - ps: Invoke-WebRequest "https://raw.githubusercontent.com/vostok/appveyor/master/init-deploy-variables.ps1" -Out "init-deploy-variables.ps1"
-  - ps: ./init-deploy-variables.ps1
-  - ps: Invoke-WebRequest "https://raw.githubusercontent.com/vostok/appveyor/master/cement-install.ps1" -Out "cement-install.ps1"
+  - ps: Invoke-WebRequest "https://raw.githubusercontent.com/DmitryZyr/appveyor/master/cement-install.ps1" -Out "cement-install.ps1"
   - ps: ./cement-install.ps1
-
-# version patching
-assembly_info:
-  patch: true
-  file: AssemblyInfo.cs
-  assembly_version: '{version}'
-  assembly_file_version: '{version}'
   
-dotnet_csproj:
-  patch: true
-  file: '**\*.csproj'
-  version: '{version}'
-  package_version: '{version}'
-  assembly_version: '{version}'
-  file_version: '{version}'
-
 before_build:
-  nuget restore || exit /b 0
-  
+  - cmd: nuget restore || exit /b 0
+  - ps: |
+      if ($env:APPVEYOR_REPO_BRANCH -eq "master" -or ($env:APPVEYOR_REPO_TAG_NAME -ne $null -and $env:APPVEYOR_REPO_TAG_NAME.StartsWith("prerelease/"))) {
+        $formattedBuildNumber = [convert]::ToInt32($env:APPVEYOR_BUILD_NUMBER, 10).ToString("000000")
+        $env:build_version_suffix = "-pre$formattedBuildNumber"
+        $env:need_deploy_to_nuget = 'true'
+      }
+      if ($env:APPVEYOR_REPO_TAG_NAME -ne $null -and $env:APPVEYOR_REPO_TAG_NAME.StartsWith("release/")) {
+        $env:build_version_suffix = ""
+        $env:need_deploy_to_nuget = 'true'
+        $env:need_deploy_to_github = 'true'
+      }
+      
+  - ps: |
+      Get-ChildItem -Recurse -Filter "*.nuspec" | ForEach-Object {
+        $nuspec = [xml](Get-Content $_.FullName)
+        $nuspecVersion = $nuspec.package.metadata.version
+        $version = "$nuspecVersion$env:build_version_suffix"
+        $csprojFile = $_.FullName.Replace(".nuspec", ".csproj")
+        $csproj = Get-Content $csprojFile -Raw
+        $versionNodes =  $csproj | Select-Xml -XPath "/Project/PropertyGroup/Version"
+        if ($versionNodes.Count -ne 1) {
+          throw "You should specify tag Version: ""<Version>1.0.0</Version>"" in $csprojFile"
+        }
+        
+        $patchedCsproj = $csproj -replace "<Version>.+</Version>", "<Version>$version</Version>"
+        $patchedCsproj | Out-File -Encoding UTF8 $csprojFile
+      }
+
 build_script:
   - cmd: cd .. & call %cm% init & cd %appveyor_build_folder%
   - cmd: call %cm% update-deps -v
@@ -36,7 +45,14 @@ build_script:
   - cmd: call %cm% build
 
 after_test:
-  - ps: Get-ChildItem -Recurse -Filter "*.nuspec" | ForEach-Object {nuget pack $_.FullName -Version "$env:APPVEYOR_BUILD_VERSION"}
+  - ps: |
+      Get-ChildItem -Recurse -Filter "*.nuspec" | ForEach-Object {
+        if ("$env:build_version_suffix" -ne "") {
+          nuget pack $_.FullName -Suffix "$env:build_version_suffix".TrimStart('-')
+        } else {
+          nuget pack $_.FullName
+        }
+      }
 
 artifacts:
   - path: '**\*.nupkg'
