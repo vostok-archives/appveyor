@@ -5,7 +5,7 @@ image: Visual Studio 2017
 version: 0.0.0.{build}
 
 install:
-  - ps: Invoke-WebRequest "https://raw.githubusercontent.com/DmitryZyr/appveyor/master/cement-install.ps1" -Out "cement-install.ps1"
+  - ps: Invoke-WebRequest "https://raw.githubusercontent.com/vostok/appveyor/master/cement-install.ps1" -Out "cement-install.ps1"
   - ps: ./cement-install.ps1
   
 before_build:
