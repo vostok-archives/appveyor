@@ -4,6 +4,9 @@ image: Visual Studio 2017
 # default appveyour version
 version: 0.0.0.{build}
 
+environment:
+  nuget_packages_folder: $(APPVEYOR_BUILD_FOLDER)\nuget-packages
+
 install:
   - ps: Invoke-WebRequest "https://raw.githubusercontent.com/vostok/appveyor/master/cement-install.ps1" -Out "cement-install.ps1"
   - ps: ./cement-install.ps1
@@ -48,14 +51,14 @@ after_test:
   - ps: |
       Get-ChildItem -Recurse -Filter "*.nuspec" | ForEach-Object {
         if ("$env:build_version_suffix" -ne "") {
-          nuget pack $_.FullName -Suffix "$env:build_version_suffix".TrimStart('-')
+          nuget pack $_.FullName -Suffix "$env:build_version_suffix".TrimStart('-') -OutputDirectory $env:nuget_packages_folder
         } else {
-          nuget pack $_.FullName
+          nuget pack $_.FullName -OutputDirectory $env:nuget_packages_folder
         }
       }
 
 artifacts:
-  - path: '**\*.nupkg'
+  - path: nuget-packages\*.nupkg
 
 deploy:
   # Deploying to NuGet feed
