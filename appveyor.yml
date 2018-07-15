@@ -26,21 +26,38 @@ before_build:
       }
       
   - ps: |
-      Get-ChildItem -Recurse -Filter "*.nuspec" | ForEach-Object {
-        $nuspec = [xml](Get-Content $_.FullName)
-        $nuspecVersion = $nuspec.package.metadata.version
-        $version = "$nuspecVersion$env:build_version_suffix"
-        $csprojFile = $_.FullName.Replace(".nuspec", ".csproj")
-        $csproj = Get-Content $csprojFile -Raw
-        $versionNodes =  $csproj | Select-Xml -XPath "/Project/PropertyGroup/Version"
-        if ($versionNodes.Count -ne 1) {
-          throw "You should specify tag Version: ""<Version>1.0.0</Version>"" in $csprojFile"
+      Function UpdateProperty {
+        Param ($csproj, $property, $propertyValue)
+        $node = $csproj.Project.PropertyGroup.ChildNodes | where {$_.Name -eq $property}
+        if ($node -eq $null) {
+            $node = $csproj.CreateNode("element", $property, "")
+            $csproj.Project.PropertyGroup.AppendChild($node) > $null; 
         }
-        
-        $patchedCsproj = $csproj -replace "<Version>.+</Version>", "<Version>$version</Version>"
-        $patchedCsproj | Out-File -Encoding UTF8 $csprojFile
+        $node.InnerText = $propertyValue
       }
-
+      
+      Get-ChildItem -Recurse -Filter "*.nuspec" | ForEach-Object {
+          $nuspec = [xml](Get-Content $_.FullName)
+          $csprojFile = $_.FullName.Replace(".nuspec", ".csproj")
+          $csproj = [xml](Get-Content $csprojFile)
+          
+          UpdateProperty $csproj "isPackable" $false
+          UpdateProperty $csproj "version" $nuspec.package.metadata.version + "$env:build_version_suffix"
+          UpdateProperty $csproj "authors" $nuspec.package.metadata.authors
+          UpdateProperty $csproj "owners" $nuspec.package.metadata.owners
+          UpdateProperty $csproj "copyright" $nuspec.package.metadata.copyright
+          UpdateProperty $csproj "description" $nuspec.package.metadata.description
+          UpdateProperty $csproj "repositoryUrl" ($nuspec.package.metadata.repository.Attributes | where {$_.Name -eq "url"}).Value
+          UpdateProperty $csproj "repositoryType" ($nuspec.package.metadata.repository.Attributes | where {$_.Name -eq "type"}).Value
+          UpdateProperty $csproj "packageLicenseUrl" $nuspec.package.metadata.licenseUrl
+          UpdateProperty $csproj "packageProjectUrl" $nuspec.package.metadata.projectUrl
+          UpdateProperty $csproj "packageIconUrl" $nuspec.package.metadata.iconUrl
+          UpdateProperty $csproj "packageTags" $nuspec.package.metadata.tags
+          UpdateProperty $csproj "packageReleaseNotes" $nuspec.package.metadata.releaseNotes
+      
+          $csproj.Save($csprojFile);
+      }
+      
 build_script:
   - cmd: cd .. & call %cm% init & cd %appveyor_build_folder%
   - cmd: call %cm% update-deps -v
