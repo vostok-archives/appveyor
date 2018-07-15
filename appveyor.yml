@@ -87,6 +87,7 @@ deploy:
 
   - provider: Environment
     name: Nuget
+    artifact: /.*\.nupkg/
     on:
       need_deploy_to_nuget: true
       
