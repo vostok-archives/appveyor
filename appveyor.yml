@@ -41,7 +41,7 @@ before_build:
           $csprojFile = $_.FullName.Replace(".nuspec", ".csproj")
           $csproj = [xml](Get-Content $csprojFile)
           
-          UpdateProperty $csproj "isPackable" $false
+          UpdateProperty $csproj "generatePackageOnBuild" $false
           UpdateProperty $csproj "version" $nuspec.package.metadata.version + "$env:build_version_suffix"
           UpdateProperty $csproj "authors" $nuspec.package.metadata.authors
           UpdateProperty $csproj "owners" $nuspec.package.metadata.owners
